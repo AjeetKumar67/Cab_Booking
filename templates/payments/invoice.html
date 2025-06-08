@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice #{{ invoice.invoice_number }} - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'ride_detail' invoice.payment.ride.id %}">Ride #{{ invoice.payment.ride.id }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Invoice #{{ invoice.invoice_number }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Invoice</h5>
+        <button class="btn btn-light btn-sm" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Print
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h4 class="text-primary mb-3">Rapido Clone</h4>
+                <p class="mb-1">123 Transport Street</p>
+                <p class="mb-1">Bangalore, Karnataka 560001</p>
+                <p class="mb-1">India</p>
+                <p class="mb-1">Phone: +91 9876543210</p>
+                <p class="mb-0">Email: support@rapidoclone.com</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <h4 class="mb-3">Invoice #{{ invoice.invoice_number }}</h4>
+                <p class="mb-1"><strong>Date:</strong> {{ invoice.created_at|date:"d M, Y" }}</p>
+                <p class="mb-1"><strong>Ride ID:</strong> {{ invoice.payment.ride.id }}</p>
+                <p class="mb-1">
+                    <strong>Status:</strong>
+                    <span class="badge bg-{% if invoice.payment.status == 'completed' %}success{% elif invoice.payment.status == 'pending' %}warning{% else %}danger{% endif %}">
+                        {{ invoice.payment.get_status_display }}
+                    </span>
+                </p>
+                <p class="mb-0"><strong>Payment Method:</strong> {{ invoice.payment.get_payment_mode_display }}</p>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5 class="mb-2">Bill To:</h5>
+                <p class="mb-1"><strong>{{ invoice.payment.ride.rider.user.get_full_name }}</strong></p>
+                <p class="mb-1">{{ invoice.payment.ride.rider.mobile }}</p>
+                <p class="mb-0">{{ invoice.payment.ride.rider.user.email }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <h5 class="mb-2">Ride Details:</h5>
+                <p class="mb-1"><strong>From:</strong> {{ invoice.payment.ride.pickup_location }}</p>
+                <p class="mb-1"><strong>To:</strong> {{ invoice.payment.ride.drop_location }}</p>
+                <p class="mb-0"><strong>Date:</strong> {{ invoice.payment.ride.requested_at|date:"d M, Y H:i" }}</p>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Base Fare ({{ invoice.payment.ride.cab_type.name }})</td>
+                        <td class="text-end">₹{{ invoice.base_fare }}</td>
+                    </tr>
+                    <tr>
+                        <td>Distance Charge ({{ invoice.payment.ride.distance }} km × ₹{{ invoice.payment.ride.cab_type.price_per_km }})</td>
+                        <td class="text-end">₹{{ invoice.distance_fare }}</td>
+                    </tr>
+                    {% if invoice.waiting_charges > 0 %}
+                        <tr>
+                            <td>Waiting Charges</td>
+                            <td class="text-end">₹{{ invoice.waiting_charges }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if invoice.taxes > 0 %}
+                        <tr>
+                            <td>Taxes</td>
+                            <td class="text-end">₹{{ invoice.taxes }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end">₹{{ invoice.total_amount }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h5>Driver Information:</h5>
+                <p class="mb-1"><strong>Name:</strong> {{ invoice.payment.ride.driver.user_profile.user.get_full_name }}</p>
+                <p class="mb-1"><strong>Vehicle:</strong> {{ invoice.payment.ride.driver.vehicle_model }} ({{ invoice.payment.ride.driver.vehicle_number }})</p>
+                <p class="mb-0"><strong>Vehicle Type:</strong> {{ invoice.payment.ride.cab_type.name }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-info mb-0">
+                    <h5 class="alert-heading">Payment Information</h5>
+                    <p class="mb-1">Transaction ID: {{ invoice.payment.transaction_id }}</p>
+                    {% if invoice.payment.paid_at %}
+                        <p class="mb-0">Payment Date: {{ invoice.payment.paid_at|date:"d M, Y H:i" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4 justify-content-center">
+            <div class="col-md-10">
+                <div class="alert alert-secondary text-center">
+                    <p class="mb-0">Thank you for choosing Rapido Clone! For any questions regarding this invoice, please contact our support team.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .card, .card * {
+            visibility: visible;
+        }
+        .card {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+        }
+        .card-header, .breadcrumb, .btn-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Welcome, {{ user.get_full_name|default:user.username }}</h2>
+        <p class="lead">Book a ride or check your ride history</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'book_ride' %}" class="btn btn-primary"><i class="fas fa-car me-2"></i>Book a Ride</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Rides</h5>
+                        <h2 class="mb-0">{{ total_rides }}</h2>
+                    </div>
+                    <i class="fas fa-taxi fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Completed Rides</h5>
+                        <h2 class="mb-0">{{ completed_rides }}</h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Spent</h5>
+                        <h2 class="mb-0">₹{{ total_spent }}</h2>
+                    </div>
+                    <i class="fas fa-rupee-sign fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_ride %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-car me-2"></i>Your Current Ride</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>From: {{ current_ride.pickup_location }}</h5>
+                            <h5>To: {{ current_ride.drop_location }}</h5>
+                            <p>
+                                <span class="badge bg-{{ current_ride.status|lower }}">{{ current_ride.get_status_display }}</span>
+                                <span class="ms-2">{{ current_ride.cab_type.name }}</span>
+                            </p>
+                            
+                            {% if current_ride.driver %}
+                                <div class="d-flex align-items-center mt-3">
+                                    {% if current_ride.driver.user_profile.photo %}
+                                        <img src="{{ current_ride.driver.user_profile.photo.url }}" alt="{{ current_ride.driver.user_profile.user.get_full_name }}" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/60" alt="{{ current_ride.driver.user_profile.user.get_full_name }}" class="rounded-circle me-3">
+                                    {% endif %}
+                                    <div>
+                                        <h5 class="mb-0">{{ current_ride.driver.user_profile.user.get_full_name }}</h5>
+                                        <p class="mb-0">{{ current_ride.driver.vehicle_model }} ({{ current_ride.driver.vehicle_number }})</p>
+                                        <div class="rating">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= current_ride.driver.average_rating|floatformat:"0" %}
+                                                    <i class="fas fa-star"></i>
+                                                {% elif forloop.counter <= current_ride.driver.average_rating|add:"0.5"|floatformat:"0" %}
+                                                    <i class="fas fa-star-half-alt"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <span class="ms-1">{{ current_ride.driver.average_rating|floatformat:1 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p>Looking for a driver...</p>
+                            {% endif %}
+                            
+                            <div class="mt-3">
+                                <h5>Fare Details:</h5>
+                                <div class="d-flex justify-content-between">
+                                    <span>Estimated Fare:</span>
+                                    <span>₹{{ current_ride.estimated_fare }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Distance:</span>
+                                    <span>{{ current_ride.distance }} km</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="map" style="height: 250px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        {% if current_ride.status == 'requested' %}
+                            <form method="post" action="{% url 'cancel_ride' current_ride.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Cancel Ride</button>
+                            </form>
+                        {% elif current_ride.status == 'completed' %}
+                            <a href="{% url 'ride_detail' current_ride.id %}" class="btn btn-primary">View Details</a>
+                            {% if not has_rated_driver %}
+                                <a href="{% url 'rate_driver' current_ride.id %}" class="btn btn-outline-primary ms-2">Rate Driver</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Rides</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_rides %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Vehicle</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ride in recent_rides %}
+                                    <tr>
+                                        <td>{{ ride.requested_at|date:"d M, Y" }}</td>
+                                        <td>{{ ride.pickup_location }}</td>
+                                        <td>{{ ride.drop_location }}</td>
+                                        <td>{{ ride.cab_type.name }}</td>
+                                        <td>₹{{ ride.final_fare|default:ride.estimated_fare }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ ride.status }}">
+                                                {{ ride.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'ride_detail' ride.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'ride_history' %}" class="btn btn-outline-primary">View All Rides</a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-car-side fa-4x text-muted mb-3"></i>
+                        <h4>No rides yet</h4>
+                        <p>Book your first ride now!</p>
+                        <a href="{% url 'book_ride' %}" class="btn btn-primary mt-2">Book a Ride</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+<script>
+    {% if current_ride %}
+    // Initialize the map
+    function initMap() {
+        const pickupLocation = {
+            lat: {{ current_ride.pickup_latitude }},
+            lng: {{ current_ride.pickup_longitude }}
+        };
+        const dropLocation = {
+            lat: {{ current_ride.drop_latitude }},
+            lng: {{ current_ride.drop_longitude }}
+        };
+        
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 12,
+            center: pickupLocation,
+        });
+        
+        // Pickup marker
+        const pickupMarker = new google.maps.Marker({
+            position: pickupLocation,
+            map: map,
+            title: "Pickup Location",
+            icon: {
+                url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+            }
+        });
+        
+        // Drop marker
+        const dropMarker = new google.maps.Marker({
+            position: dropLocation,
+            map: map,
+            title: "Drop Location",
+            icon: {
+                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+            }
+        });
+        
+        // Draw a line between the two points
+        const path = new google.maps.Polyline({
+            path: [pickupLocation, dropLocation],
+            geodesic: true,
+            strokeColor: "#FF5722",
+            strokeOpacity: 1.0,
+            strokeWeight: 3,
+        });
+        
+        path.setMap(map);
+        
+        // Fit the map to show both markers
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(pickupLocation);
+        bounds.extend(dropLocation);
+        map.fitBounds(bounds);
+    }
+    
+    // Load the map
+    window.onload = initMap;
+    {% endif %}
+</script>
+{% endblock %}

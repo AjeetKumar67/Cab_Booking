@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Ride History - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Ride History</h2>
+        <p class="lead">View all your past rides and trips</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'book_ride' %}" class="btn btn-primary"><i class="fas fa-car me-2"></i>Book a Ride</a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <ul class="nav nav-tabs card-header-tabs" id="rideHistoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active text-white" id="all-rides-tab" data-bs-toggle="tab" href="#all-rides" role="tab" aria-controls="all-rides" aria-selected="true">All Rides</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link text-white" id="completed-tab" data-bs-toggle="tab" href="#completed" role="tab" aria-controls="completed" aria-selected="false">Completed</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link text-white" id="cancelled-tab" data-bs-toggle="tab" href="#cancelled" role="tab" aria-controls="cancelled" aria-selected="false">Cancelled</a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="rideHistoryTabContent">
+            <div class="tab-pane fade show active" id="all-rides" role="tabpanel" aria-labelledby="all-rides-tab">
+                {% include 'rides/partials/ride_list.html' with rides=rides %}
+            </div>
+            <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+                {% include 'rides/partials/ride_list.html' with rides=completed_rides %}
+            </div>
+            <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                {% include 'rides/partials/ride_list.html' with rides=cancelled_rides %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

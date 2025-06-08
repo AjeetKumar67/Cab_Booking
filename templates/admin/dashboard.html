@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Admin Dashboard</h2>
+        <p class="lead">Manage users, drivers, and monitor platform activity</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'admin:index' %}" class="btn btn-primary"><i class="fas fa-cog me-2"></i>Admin Panel</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Users</h5>
+                        <h2 class="mb-0">{{ total_users }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Drivers</h5>
+                        <h2 class="mb-0">{{ total_drivers }}</h2>
+                    </div>
+                    <i class="fas fa-id-card fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Rides</h5>
+                        <h2 class="mb-0">{{ total_rides }}</h2>
+                    </div>
+                    <i class="fas fa-taxi fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Revenue</h5>
+                        <h2 class="mb-0">₹{{ total_revenue }}</h2>
+                    </div>
+                    <i class="fas fa-money-bill-wave fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Ride Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="rideChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Cab Type Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="cabTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-check me-2"></i>Pending Driver Approvals</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_drivers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Driver</th>
+                                    <th>Cab Type</th>
+                                    <th>Vehicle</th>
+                                    <th>License</th>
+                                    <th>Registration Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for driver in pending_drivers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if driver.user_profile.photo %}
+                                                    <img src="{{ driver.user_profile.photo.url }}" alt="{{ driver.user_profile.user.get_full_name }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                {% else %}
+                                                    <img src="https://via.placeholder.com/40" alt="{{ driver.user_profile.user.get_full_name }}" class="rounded-circle me-2">
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-0">{{ driver.user_profile.user.get_full_name }}</h6>
+                                                    <small class="text-muted">{{ driver.user_profile.mobile }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ driver.cab_type.name }}</td>
+                                        <td>{{ driver.vehicle_model }} ({{ driver.vehicle_number }})</td>
+                                        <td>{{ driver.license_number }}</td>
+                                        <td>{{ driver.created_at|date:"d M, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <form method="post" action="{% url 'approve_driver' driver.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-success me-2">Approve</button>
+                                                </form>
+                                                <form method="post" action="{% url 'reject_driver' driver.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-4x text-muted mb-3"></i>
+                        <h4>No pending driver approvals</h4>
+                        <p>All driver applications have been processed.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-car me-2"></i>Active Rides</h5>
+            </div>
+            <div class="card-body">
+                {% if active_rides %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ride ID</th>
+                                    <th>Rider</th>
+                                    <th>Driver</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Status</th>
+                                    <th>Requested At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ride in active_rides %}
+                                    <tr>
+                                        <td>#{{ ride.id }}</td>
+                                        <td>{{ ride.rider.user.get_full_name }}</td>
+                                        <td>
+                                            {% if ride.driver %}
+                                                {{ ride.driver.user_profile.user.get_full_name }}
+                                            {% else %}
+                                                <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ ride.pickup_location }}</td>
+                                        <td>{{ ride.drop_location }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ ride.status }}">
+                                                {{ ride.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ ride.requested_at|date:"d M, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{% url 'ride_detail' ride.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-car-side fa-4x text-muted mb-3"></i>
+                        <h4>No active rides</h4>
+                        <p>There are no rides in progress at the moment.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Send Announcement</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'send_announcement' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="announcement_title" class="form-label">Announcement Title</label>
+                        <input type="text" class="form-control" id="announcement_title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="announcement_message" class="form-label">Message</label>
+                        <textarea class="form-control" id="announcement_message" name="message" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Send To</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="recipient_type" id="all_users" value="all" checked>
+                            <label class="form-check-label" for="all_users">
+                                All Users
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="recipient_type" id="riders_only" value="riders">
+                            <label class="form-check-label" for="riders_only">
+                                Riders Only
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="recipient_type" id="drivers_only" value="drivers">
+                            <label class="form-check-label" for="drivers_only">
+                                Drivers Only
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Announcement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Ride Statistics Chart
+    const rideCtx = document.getElementById('rideChart').getContext('2d');
+    const rideChart = new Chart(rideCtx, {
+        type: 'line',
+        data: {
+            labels: {{ ride_dates|safe }},
+            datasets: [{
+                label: 'Rides',
+                data: {{ ride_counts }},
+                backgroundColor: 'rgba(255, 87, 34, 0.2)',
+                borderColor: 'rgba(255, 87, 34, 1)',
+                borderWidth: 2,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+    
+    // Cab Type Distribution Chart
+    const cabTypeCtx = document.getElementById('cabTypeChart').getContext('2d');
+    const cabTypeChart = new Chart(cabTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ cab_type_names|safe }},
+            datasets: [{
+                data: {{ cab_type_counts }},
+                backgroundColor: [
+                    'rgba(255, 87, 34, 0.7)',
+                    'rgba(33, 150, 243, 0.7)',
+                    'rgba(76, 175, 80, 0.7)',
+                    'rgba(255, 193, 7, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 87, 34, 1)',
+                    'rgba(33, 150, 243, 1)',
+                    'rgba(76, 175, 80, 1)',
+                    'rgba(255, 193, 7, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+        }
+    });
+</script>
+{% endblock %}

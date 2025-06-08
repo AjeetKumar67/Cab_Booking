@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+
+{% block title %}Ride Details - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'ride_history' %}">Ride History</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Ride #{{ ride.id }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-car me-2"></i>Ride Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>From: {{ ride.pickup_location }}</h5>
+                        <h5>To: {{ ride.drop_location }}</h5>
+                        <p>
+                            <span class="badge bg-{{ ride.status }}">{{ ride.get_status_display }}</span>
+                            <span class="badge bg-secondary ms-2">{{ ride.cab_type.name }}</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-1"><strong>Requested:</strong> {{ ride.requested_at|date:"d M, Y H:i" }}</p>
+                        
+                        {% if ride.accepted_at %}
+                            <p class="mb-1"><strong>Accepted:</strong> {{ ride.accepted_at|date:"d M, Y H:i" }}</p>
+                        {% endif %}
+                        
+                        {% if ride.started_at %}
+                            <p class="mb-1"><strong>Started:</strong> {{ ride.started_at|date:"d M, Y H:i" }}</p>
+                        {% endif %}
+                        
+                        {% if ride.completed_at %}
+                            <p class="mb-1"><strong>Completed:</strong> {{ ride.completed_at|date:"d M, Y H:i" }}</p>
+                        {% endif %}
+                        
+                        {% if ride.cancelled_at %}
+                            <p class="mb-1"><strong>Cancelled:</strong> {{ ride.cancelled_at|date:"d M, Y H:i" }}</p>
+                            <p class="mb-1"><strong>Reason:</strong> {{ ride.cancellation_reason|default:"Not provided" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div id="map" style="height: 300px; border-radius: 5px;" class="mb-4"></div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Ride Information</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Distance:</span>
+                            <span>{{ ride.distance }} km</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Duration:</span>
+                            <span>{{ ride.duration|default:"--" }} mins</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Cab Type:</span>
+                            <span>{{ ride.cab_type.name }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Payment Details</h5>
+                        {% if ride.payment %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Payment Status:</span>
+                                <span class="badge bg-{% if ride.payment.status == 'completed' %}success{% elif ride.payment.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                    {{ ride.payment.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Payment Mode:</span>
+                                <span>{{ ride.payment.get_payment_mode_display }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Total Amount:</span>
+                                <span class="fw-bold">₹{{ ride.final_fare|default:ride.estimated_fare }}</span>
+                            </div>
+                            
+                            {% if ride.payment.invoice %}
+                                <div class="text-end mt-3">
+                                    <a href="{% url 'download_invoice' ride.payment.invoice.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i> Download Invoice
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted">No payment information available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if ride.status == 'completed' and user.profile.role == 'rider' and not has_rated_driver %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Rate Your Driver</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'submit_feedback' ride.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="feedback_type" value="rider_to_driver">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <div class="rating-input">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="rating" id="rating1" value="1">
+                                    <label class="form-check-label" for="rating1">1</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="rating" id="rating2" value="2">
+                                    <label class="form-check-label" for="rating2">2</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="rating" id="rating3" value="3">
+                                    <label class="form-check-label" for="rating3">3</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="rating" id="rating4" value="4">
+                                    <label class="form-check-label" for="rating4">4</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="rating" id="rating5" value="5" checked>
+                                    <label class="form-check-label" for="rating5">5</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Comments (Optional)</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Share your experience with the driver"></textarea>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Submit Rating</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if ride.feedbacks.exists %}
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Feedback</h5>
+                </div>
+                <div class="card-body">
+                    {% for feedback in ride.feedbacks.all %}
+                        <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                            <div class="flex-shrink-0">
+                                {% if feedback.feedback_type == 'rider_to_driver' %}
+                                    {% if ride.rider.photo %}
+                                        <img src="{{ ride.rider.photo.url }}" alt="{{ ride.rider.user.get_full_name }}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/50" alt="{{ ride.rider.user.get_full_name }}" class="rounded-circle">
+                                    {% endif %}
+                                {% else %}
+                                    {% if ride.driver.user_profile.photo %}
+                                        <img src="{{ ride.driver.user_profile.photo.url }}" alt="{{ ride.driver.user_profile.user.get_full_name }}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/50" alt="{{ ride.driver.user_profile.user.get_full_name }}" class="rounded-circle">
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0">
+                                        {% if feedback.feedback_type == 'rider_to_driver' %}
+                                            {{ ride.rider.user.get_full_name }}
+                                            <span class="badge bg-secondary ms-2">Rider</span>
+                                        {% else %}
+                                            {{ ride.driver.user_profile.user.get_full_name }}
+                                            <span class="badge bg-secondary ms-2">Driver</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small class="text-muted">{{ feedback.created_at|date:"d M, Y H:i" }}</small>
+                                </div>
+                                <div class="rating mb-2">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= feedback.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-2">{{ feedback.rating }}/5</span>
+                                </div>
+                                {% if feedback.comment %}
+                                    <p class="mb-0">{{ feedback.comment }}</p>
+                                {% else %}
+                                    <p class="text-muted mb-0">No comment provided</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        {% if ride.driver %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Driver Information</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if ride.driver.user_profile.photo %}
+                        <img src="{{ ride.driver.user_profile.photo.url }}" alt="{{ ride.driver.user_profile.user.get_full_name }}" class="profile-image mb-3">
+                    {% else %}
+                        <img src="https://via.placeholder.com/150" alt="{{ ride.driver.user_profile.user.get_full_name }}" class="profile-image mb-3">
+                    {% endif %}
+                    
+                    <h4>{{ ride.driver.user_profile.user.get_full_name }}</h4>
+                    <p class="text-muted mb-3">{{ ride.driver.user_profile.mobile }}</p>
+                    
+                    <div class="rating mb-3">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= ride.driver.average_rating|floatformat:"0" %}
+                                <i class="fas fa-star"></i>
+                            {% elif forloop.counter <= ride.driver.average_rating|add:"0.5"|floatformat:"0" %}
+                                <i class="fas fa-star-half-alt"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-1">{{ ride.driver.average_rating|floatformat:1 }}</span>
+                    </div>
+                    
+                    <div class="border-top pt-3">
+                        <h5>Vehicle Details</h5>
+                        <p class="mb-1">{{ ride.driver.vehicle_model }} ({{ ride.driver.vehicle_year }})</p>
+                        <p class="mb-1">{{ ride.driver.vehicle_number }}</p>
+                        <p class="mb-0">{{ ride.cab_type.name }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if ride.status == 'requested' and user.profile.role == 'rider' %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Cancel Ride</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'cancel_ride' ride.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="cancellation_reason" class="form-label">Reason for Cancellation</label>
+                            <textarea class="form-control" id="cancellation_reason" name="cancellation_reason" rows="3" placeholder="Please provide a reason for cancellation"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">Cancel Ride</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if ride.status == 'completed' and ride.payment and ride.payment.status == 'pending' and user.profile.role == 'rider' %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Complete Payment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'make_payment' ride.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Choose Payment Method</label>
+                            {% for value, name in payment_methods %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_mode" id="payment_{{ value }}" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
+                                    <label class="form-check-label" for="payment_{{ value }}">
+                                        {{ name }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <h5>Amount to Pay: ₹{{ ride.final_fare|default:ride.estimated_fare }}</h5>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Pay Now</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Ride Updates</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-0">Ride Requested</h6>
+                            <small class="text-muted">{{ ride.requested_at|date:"d M, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if ride.accepted_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Driver Accepted</h6>
+                                <small class="text-muted">{{ ride.accepted_at|date:"d M, Y H:i" }}</small>
+                                {% if ride.driver %}
+                                    <p class="mb-0">{{ ride.driver.user_profile.user.get_full_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if ride.started_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Ride Started</h6>
+                                <small class="text-muted">{{ ride.started_at|date:"d M, Y H:i" }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if ride.completed_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Ride Completed</h6>
+                                <small class="text-muted">{{ ride.completed_at|date:"d M, Y H:i" }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if ride.cancelled_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-danger"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Ride Cancelled</h6>
+                                <small class="text-muted">{{ ride.cancelled_at|date:"d M, Y H:i" }}</small>
+                                {% if ride.cancellation_reason %}
+                                    <p class="mb-0">Reason: {{ ride.cancellation_reason }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if ride.payment and ride.payment.paid_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Payment Complete</h6>
+                                <small class="text-muted">{{ ride.payment.paid_at|date:"d M, Y H:i" }}</small>
+                                <p class="mb-0">₹{{ ride.payment.amount }} via {{ ride.payment.get_payment_mode_display }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 7px;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -20px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+    }
+    
+    .timeline-content {
+        padding-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+<script>
+    // Initialize the map
+    function initMap() {
+        const pickupLocation = {
+            lat: {{ ride.pickup_latitude }},
+            lng: {{ ride.pickup_longitude }}
+        };
+        const dropLocation = {
+            lat: {{ ride.drop_latitude }},
+            lng: {{ ride.drop_longitude }}
+        };
+        
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 12,
+            center: pickupLocation,
+        });
+        
+        // Pickup marker
+        const pickupMarker = new google.maps.Marker({
+            position: pickupLocation,
+            map: map,
+            title: "Pickup Location",
+            icon: {
+                url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+            }
+        });
+        
+        // Drop marker
+        const dropMarker = new google.maps.Marker({
+            position: dropLocation,
+            map: map,
+            title: "Drop Location",
+            icon: {
+                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+            }
+        });
+        
+        // Draw a line between the two points
+        const path = new google.maps.Polyline({
+            path: [pickupLocation, dropLocation],
+            geodesic: true,
+            strokeColor: "#FF5722",
+            strokeOpacity: 1.0,
+            strokeWeight: 3,
+        });
+        
+        path.setMap(map);
+        
+        // Fit the map to show both markers
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(pickupLocation);
+        bounds.extend(dropLocation);
+        map.fitBounds(bounds);
+    }
+    
+    // Load the map
+    window.onload = initMap;
+</script>
+{% endblock %}

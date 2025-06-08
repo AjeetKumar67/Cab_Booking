@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Driver Registration - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-car me-2"></i>Driver Registration</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <h5 class="mb-3">Vehicle Information</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.cab_type.id_for_label }}" class="form-label">Cab Type</label>
+                            {{ form.cab_type }}
+                            {% if form.cab_type.errors %}
+                                <div class="text-danger">{{ form.cab_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.license_number.id_for_label }}" class="form-label">License Number</label>
+                            {{ form.license_number }}
+                            {% if form.license_number.errors %}
+                                <div class="text-danger">{{ form.license_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.vehicle_number.id_for_label }}" class="form-label">Vehicle Number</label>
+                            {{ form.vehicle_number }}
+                            {% if form.vehicle_number.errors %}
+                                <div class="text-danger">{{ form.vehicle_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.vehicle_model.id_for_label }}" class="form-label">Vehicle Model</label>
+                            {{ form.vehicle_model }}
+                            {% if form.vehicle_model.errors %}
+                                <div class="text-danger">{{ form.vehicle_model.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.vehicle_year.id_for_label }}" class="form-label">Vehicle Year</label>
+                            {{ form.vehicle_year }}
+                            {% if form.vehicle_year.errors %}
+                                <div class="text-danger">{{ form.vehicle_year.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4">Documents</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.vehicle_photo.id_for_label }}" class="form-label">Vehicle Photo</label>
+                            {{ form.vehicle_photo }}
+                            {% if form.vehicle_photo.errors %}
+                                <div class="text-danger">{{ form.vehicle_photo.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Upload a clear photo of your vehicle.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.license_photo.id_for_label }}" class="form-label">License Photo</label>
+                            {{ form.license_photo }}
+                            {% if form.license_photo.errors %}
+                                <div class="text-danger">{{ form.license_photo.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Upload a clear photo of your driver's license.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Your driver profile will need to be approved by an administrator before you can start accepting rides.
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Submit Driver Information</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

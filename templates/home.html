@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <h1 class="display-4 mb-4">Your Ride is Just a Tap Away</h1>
+        <p class="lead">Book a cab, auto, or bike for your daily commute or long journeys with just a few clicks.</p>
+        <div class="mt-4">
+            {% if user.is_authenticated %}
+                {% if user.profile.role == 'rider' %}
+                    <a href="{% url 'book_ride' %}" class="btn btn-primary btn-lg">Book a Ride</a>
+                {% elif user.profile.role == 'driver' %}
+                    <a href="{% url 'driver_dashboard' %}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-3">Sign Up</a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <img src="https://img.freepik.com/free-vector/taxi-app-concept_23-2148485646.jpg" alt="Cab Booking" class="img-fluid rounded shadow">
+    </div>
+</div>
+
+{% if not user.is_authenticated %}
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">Login</div>
+            <div class="card-body">
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    {{ login_form.as_p }}
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">Register</div>
+            <div class="card-body">
+                <form method="post" action="{% url 'register' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ register_form.as_p }}
+                    <button type="submit" class="btn btn-success">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-5 pt-5">
+    <div class="col-12 text-center mb-4">
+        <h2>Why Choose Us?</h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-3x text-primary mb-3"></i>
+                <h4>Affordable Rides</h4>
+                <p>Choose from multiple ride options to fit your budget. Pay only for the distance you travel.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                <h4>Quick Pickups</h4>
+                <p>Our drivers are stationed across the city to ensure you get picked up in minutes.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                <h4>Safe & Secure</h4>
+                <p>All our drivers are verified and rated by users. Track your ride in real-time.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 text-center mb-4">
+        <h2>Our Cab Options</h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow">
+            <img src="https://img.freepik.com/free-vector/motorcycle-realistic-image-black_1284-10608.jpg" class="card-img-top p-3" alt="Bike">
+            <div class="card-body text-center">
+                <h4>Bike</h4>
+                <p>Perfect for solo travelers. Beat the traffic with quick bike rides.</p>
+                <h5 class="text-primary">₹10/km</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow">
+            <img src="https://img.freepik.com/free-vector/realistic-indian-auto-rickshaw_23-2148982880.jpg" class="card-img-top p-3" alt="Auto">
+            <div class="card-body text-center">
+                <h4>Auto</h4>
+                <p>Convenient three-wheeler for short to medium distance travel.</p>
+                <h5 class="text-primary">₹15/km</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow">
+            <img src="https://img.freepik.com/free-vector/modern-blue-urban-adventure-suv-vehicle_1308-103572.jpg" class="card-img-top p-3" alt="Car">
+            <div class="card-body text-center">
+                <h4>Car</h4>
+                <p>Comfortable sedan for up to 4 passengers with AC and ample space.</p>
+                <h5 class="text-primary">₹20/km</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow">
+            <img src="https://img.freepik.com/free-vector/modern-blue-urban-adventure-suv-vehicle_1308-90702.jpg" class="card-img-top p-3" alt="SUV">
+            <div class="card-body text-center">
+                <h4>SUV</h4>
+                <p>Spacious vehicle for large groups or family travel with luggage.</p>
+                <h5 class="text-primary">₹25/km</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5 bg-light p-5 rounded shadow">
+    <div class="col-md-6">
+        <h2>Join as a Driver</h2>
+        <p class="lead">Own a vehicle? Partner with us and earn money on your own schedule.</p>
+        <ul class="list-unstyled mt-4">
+            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Flexible working hours</li>
+            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Weekly payouts</li>
+            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Incentives and bonuses</li>
+            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> 24/7 support</li>
+        </ul>
+        <a href="{% url 'register' %}" class="btn btn-primary mt-3">Sign up as Driver</a>
+    </div>
+    <div class="col-md-6">
+        <img src="https://img.freepik.com/free-vector/food-delivery-man-riding-motorcycle-cartoon-character-fast-delivery-service_1308-62706.jpg" alt="Driver" class="img-fluid rounded">
+    </div>
+</div>
+{% endblock %}

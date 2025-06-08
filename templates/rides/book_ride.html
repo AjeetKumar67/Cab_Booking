@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Book a Ride - Rapido Clone{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-car me-2"></i>Book a Ride</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="rideBookingForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.pickup_location.id_for_label }}" class="form-label">Pickup Location</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            {{ form.pickup_location }}
+                        </div>
+                        {% if form.pickup_location.errors %}
+                            <div class="text-danger">{{ form.pickup_location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.drop_location.id_for_label }}" class="form-label">Drop Location</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-map-pin"></i></span>
+                            {{ form.drop_location }}
+                        </div>
+                        {% if form.drop_location.errors %}
+                            <div class="text-danger">{{ form.drop_location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    {{ form.pickup_latitude }}
+                    {{ form.pickup_longitude }}
+                    {{ form.drop_latitude }}
+                    {{ form.drop_longitude }}
+                    {{ form.distance }}
+                    
+                    <div class="mb-3">
+                        <div id="map" style="height: 300px; border-radius: 5px;"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Choose Cab Type</label>
+                        <div class="row">
+                            {% for cab_type in form.cab_type.field.queryset %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="cab-option" data-cab-id="{{ cab_type.id }}" data-base-fare="{{ cab_type.base_fare }}" data-price-per-km="{{ cab_type.price_per_km }}">
+                                        <div class="row align-items-center">
+                                            <div class="col-3">
+                                                {% if cab_type.image %}
+                                                    <img src="{{ cab_type.image.url }}" alt="{{ cab_type.name }}" class="img-fluid">
+                                                {% else %}
+                                                    <i class="fas fa-car fa-2x text-primary"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-9">
+                                                <h5 class="mb-0">{{ cab_type.name }}</h5>
+                                                <p class="mb-0">₹{{ cab_type.base_fare }} + ₹{{ cab_type.price_per_km }}/km</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="d-none">
+                            {{ form.cab_type }}
+                        </div>
+                        {% if form.cab_type.errors %}
+                            <div class="text-danger">{{ form.cab_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="fare-estimate card d-none mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Fare Estimate</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Base Fare:</span>
+                                        <span id="baseFare">₹0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Distance Charge:</span>
+                                        <span id="distanceCharge">₹0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Distance:</span>
+                                        <span id="displayDistance">0 km</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Estimated Time:</span>
+                                        <span id="estimatedTime">0 mins</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="fw-bold">Total Fare:</span>
+                                        <span class="fw-bold" id="totalFare">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="bookRideBtn" disabled>Book Ride</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Booking Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6><i class="fas fa-map-marker-alt text-danger me-2"></i>Enter Pickup & Drop</h6>
+                    <p class="text-muted">Specify your pickup and drop locations to calculate the distance and fare.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-car text-primary me-2"></i>Choose Cab Type</h6>
+                    <p class="text-muted">Select the type of vehicle based on your need and budget.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-rupee-sign text-success me-2"></i>Check Fare</h6>
+                    <p class="text-muted">Review the estimated fare before confirming your booking.</p>
+                </div>
+                
+                <div>
+                    <h6><i class="fas fa-user-check text-info me-2"></i>Driver Assignment</h6>
+                    <p class="text-muted">A nearby driver will be assigned to your ride. You can track their arrival on the map.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Rides</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_rides %}
+                    {% for ride in recent_rides %}
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                            <div class="ride-status-indicator status-{{ ride.status }}"></div>
+                            <div>
+                                <h6 class="mb-0">{{ ride.pickup_location }} → {{ ride.drop_location }}</h6>
+                                <small class="text-muted">{{ ride.requested_at|date:"d M, Y" }} • ₹{{ ride.final_fare|default:ride.estimated_fare }}</small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="text-center mt-2">
+                        <a href="{% url 'ride_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted mb-0">No recent rides found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initMap" async defer></script>
+<script src="{% static 'js/ride_booking.js' %}"></script>
+{% endblock %}

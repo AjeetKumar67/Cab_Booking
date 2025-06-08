@@ -1,0 +1,101 @@
+{% if rides %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Vehicle</th>
+                    {% if user.profile.role == 'rider' %}
+                        <th>Driver</th>
+                    {% else %}
+                        <th>Rider</th>
+                    {% endif %}
+                    <th>Fare</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ride in rides %}
+                    <tr>
+                        <td>{{ ride.requested_at|date:"d M, Y" }}</td>
+                        <td>{{ ride.pickup_location }}</td>
+                        <td>{{ ride.drop_location }}</td>
+                        <td>{{ ride.cab_type.name }}</td>
+                        {% if user.profile.role == 'rider' %}
+                            <td>
+                                {% if ride.driver %}
+                                    {{ ride.driver.user_profile.user.get_full_name }}
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </td>
+                        {% else %}
+                            <td>{{ ride.rider.user.get_full_name }}</td>
+                        {% endif %}
+                        <td>₹{{ ride.final_fare|default:ride.estimated_fare }}</td>
+                        <td>
+                            <span class="badge bg-{{ ride.status }}">
+                                {{ ride.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'ride_detail' ride.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-car-side fa-4x text-muted mb-3"></i>
+        <h4>No rides found</h4>
+        <p class="mb-4">You haven't taken any rides yet.</p>
+        {% if user.profile.role == 'rider' %}
+            <a href="{% url 'book_ride' %}" class="btn btn-primary">Book a Ride</a>
+        {% endif %}
+    </div>
+{% endif %}
